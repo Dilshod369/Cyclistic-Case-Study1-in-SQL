@@ -1,0 +1,217 @@
+
+-- Prepare Phase --
+-- At this step all the csv files were loaded though 'Import Flat File' into a new Database in SQL Server.
+-- Joining all 12 months into one combined dataset. 
+
+SELECT *
+INTO cyclistic_2023
+FROM dbo.trip_202301
+UNION ALL
+SELECT *
+FROM dbo.trip_202302
+UNION ALL
+SELECT *
+FROM dbo.trip_202303
+UNION ALL
+SELECT *
+FROM dbo.trip_202304
+UNION ALL
+SELECT *
+FROM dbo.trip_202305
+UNION ALL
+SELECT *
+FROM dbo.trip_202306
+UNION ALL
+SELECT *
+FROM dbo.trip_202307
+UNION ALL
+SELECT *
+FROM dbo.trip_202308
+UNION ALL
+SELECT *
+FROM dbo.trip_202309
+UNION ALL
+SELECT *
+FROM dbo.trip_202310
+UNION ALL
+SELECT *
+FROM dbo.trip_202311
+UNION ALL
+SELECT *
+FROM dbo.trip_202312;
+
+-- Select only first 100 rows to review the dataset
+-- You can just use SELECT * clause, but because the data is too big, therefore it will take longer time 
+SELECT *
+FROM dbo.cyclistic_2023
+ORDER BY ride_id
+OFFSET 0 ROWS FETCH FIRST 100 ROWS ONLY;
+
+-- Deleting unnecessary columns, 'start_station_id' & 'end_station_id'
+ALTER TABLE dbo.cyclistic_2023
+DROP COLUMN start_station_id;
+
+ALTER TABLE dbo.cyclistic_2023
+DROP COLUMN end_station_id
+
+
+-- Process Phase --
+-- Identify, count and remove Null values
+-- Counting NULL values for the specific column. At this step you should count the NULLs for each column separately.
+SELECT COUNT(*) AS start_station_nameNULL
+FROM dbo.Cyclistic_2023
+WHERE
+  start_station_name IS NULL
+
+-- Counting how many NULL values from a specific column belongs to Riders - ‘rider_id’
+SELECT ride_id,
+  start_station_name AS start_station_nameNULL
+FROM dbo.cyclistic_2023
+WHERE
+  start_station_name IS NULL
+
+/* Count how many NULL values from 'start_station_name' 
+& 'end_station_name' belongs to 'casual' and 'member' riders */
+
+-- For 'start_station_nameNULL' and casual rider.
+SELECT COUNT(*) AS start_station_nameNULL
+FROM dbo.Cyclistic_2023
+WHERE
+ start_station_name IS NULL
+AND member_casual = 'casual'
+
+-- For 'start_station_nameNULL' and member rider.
+SELECT COUNT(*) AS start_station_nameNULL
+FROM dbo.Cyclistic_2023
+WHERE
+ start_station_name IS NULL
+AND member_casual = 'member'
+
+-- For 'end_station_nameNULL' and casual rider
+SELECT COUNT(*) AS end_station_nameNULL
+FROM dbo.cyclistic_2023
+WHERE
+  end_station_name IS NULL
+  AND member_casual = 'casual'
+
+-- For 'end_station_nameNULL' and member rider
+SELECT COUNT(*) AS end_station_nameNULL
+FROM dbo.cyclistic_2023
+WHERE
+  end_station_name IS NULL
+  AND member_casual = 'member'
+
+-- Total count of NULLs for these four columns
+SELECT COUNT(*)
+FROM dbo.cyclistic_2023
+WHERE
+  start_station_name IS NULL
+  OR end_station_name IS NULL
+  OR end_lat IS NULL
+  OR end_lng IS NULL -- Result message is '1387927'
+
+
+-- Removing NULL values from these four columns
+SELECT COUNT(ride_id)
+FROM dbo.Cyclistic_2023 -- Result message is: '5719877'
+
+DELETE FROM dbo.cyclistic_2023
+WHERE
+  start_station_name IS NULL
+  OR end_station_name IS NULL
+  OR end_lat IS NULL
+  OR end_lng IS NULL  -- Result message is: (1387927 rows affected)
+
+  SELECT COUNT(ride_id)
+FROM dbo.cyclistic_2023 -- Now the result message is: '4331950'. That's correct, because 5719877-1387927 = 4331950
+
+-- Identify and remove duplicate values by copying DISTINCT values into a new Table.
+SELECT DISTINCT *
+INTO clean_cyclistic_2023
+FROM dbo.cyclistic_2023; 
+/* Result message is: (4331953 rows affected), 
+this means there was no dublicates, so we can delete this new created table */
+
+DROP TABLE clean_cyclistic_2023
+
+/* In this query I checked for any logical errors in the dataset, for example, 
+I found that the end time of the ride was less than the start time. 
+There were 66 such records, therefor I removed those records.*/
+-- Count
+SELECT COUNT(*)
+FROM cyclistic_2023
+WHERE started_at > ended_at
+
+-- Review
+SELECT started_at,
+  ended_at
+FROM cyclistic_2023
+WHERE started_at > ended_at
+
+-- Delete
+DELETE FROM cyclistic_2023
+WHERE started_at > ended_at
+
+
+-- Creating ‘ride_length’ column which is a difference between end time and start time. 
+ALTER TABLE cyclistic_2023
+ADD ride_length TIME;
+
+UPDATE cyclistic_2023
+SET ride_length = CONVERT(TIME, ended_at - started_at); -- The resultd messege is: Operand data type datetime2 is invalid for subtract operator.
+
+/* If you didn't change to the 'DATETIME' type of these columns (ended_at; started_at) 
+during imrorting csv files into database then you can change it through this code: */ 
+ALTER TABLE cyclistic_2023 
+ALTER COLUMN ended_at DATETIME;
+
+-- Another approach of creating ‘ride_length’ column is following:
+ALTER TABLE cyclistic_2023 
+ADD ride_length interval;
+
+UPDATE cyclistic_2023
+SET ride_length = ended_at-started_at
+
+-- Review the Table. 
+SELECT *
+FROM cyclistic_2023 
+ORDER BY ride_id
+OFFSET 0 ROWS FETCH FIRST 100 ROWS ONLY;
+
+
+-- Deleting rows from the ‘ride_length’ column where the ride length was less than or equal to 1 minute.
+SELECT COUNT(*)
+FROM cyclistic_2023
+WHERE ride_length <= '00:01:00';
+
+DELETE FROM cyclistic_2023 
+WHERE ride_length <= '00:01:00';
+
+-- Also delete rows from the ‘ride_length’ column where the ride length was more than 10 hours
+SELECT ride_length
+FROM cyclistic_2023
+WHERE ride_length >= '10:01:00';
+
+
+/* Creating ‘day_of_week’ column which is formatted from ‘started_at’ column 
+as a number counting from Sunday as 1 to Saturday as 7.*/
+ALTER TABLE cyclistic_2023
+ADD day_of_week INTEGER; 
+
+UPDATE cyclistic_2023 
+SET day_of_week = DATEPART(WEEKDAY, started_at);
+
+/* This query checks the count of rows that have missing values 
+in one or more of the specified columns, with the alias ‘missing_values’.*/
+SELECT
+  COUNT(*) - COUNT(CASE
+    WHEN ride_id IS NOT NULL
+      AND rideable_type IS NOT NULL
+      AND started_at IS NOT NULL
+      AND ended_at IS NOT NULL
+      AND member_casual IS NOT NULL
+    THEN 1
+    ELSE NULL
+  END) AS missing_values
+FROM cyclistic_2023;
+
