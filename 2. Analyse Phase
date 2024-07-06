@@ -1,0 +1,172 @@
+
+-- Analyze Phase --
+
+-- Total Number of Riders
+SELECT COUNT(ride_id)
+FROM dbo.cyclistic_2023
+
+-- Total Number of Riders by member and casual users
+SELECT 
+COUNT(ride_id) AS no_of_riders,
+member_casual
+FROM dbo.cyclistic_2023
+GROUP BY 
+member_casual;
+
+-- Total Ride Length in minutes
+SELECT SUM((DATEDIFF(minute, 0, ride_length))) / 60 AS Total_Hours
+FROM dbo.cyclistic_2023
+
+SELECT AVG((DATEDIFF(minute, 0, ride_length))) AS Avg_time
+FROM dbo.cyclistic_2023
+
+-- Average ride length by member and casual users
+SELECT AVG((DATEDIFF(minute, 0, ride_length))) AS Avg_time,
+member_casual
+FROM dbo.cyclistic_2023
+GROUP BY 
+member_casual;
+
+
+-- Total Number of Riders by Bike type and User type (member, casual)
+SELECT
+COUNT(ride_id) AS no_of_riders,
+rideable_type,
+member_casual
+FROM dbo.cyclistic_2023
+GROUP BY 
+rideable_type,
+member_casual
+ORDER BY 
+COUNT(ride_id) DESC;
+
+-- Month
+-- Total Number of Riders by Month and User type (member, casual)
+SELECT
+COUNT(ride_id) AS no_of_riders,
+MONTH(started_at) AS month,
+member_casual
+FROM dbo.cyclistic_2023
+GROUP BY 
+MONTH(started_at),
+member_casual
+ORDER BY 
+MONTH(started_at),
+member_casual
+
+-- To find out which user type used which type of bike each month, use this code
+SELECT
+  YEAR(started_at) AS year,
+  MONTH(started_at) AS month,
+  COUNT(*) AS ride_amount,
+  rideable_type,
+  member_casual
+  FROM
+  dbo.cyclistic_2023
+  GROUP BY  
+  YEAR(started_at),
+  MONTH(started_at), 
+  member_casual, 
+  rideable_type
+  ORDER BY 
+  YEAR(started_at),
+  MONTH(started_at);
+
+-- Week
+-- Total number of riders by weekday and user type
+SELECT
+COUNT(ride_id) AS no_of_rides,
+DATEPART(WEEKDAY, started_at) as Weekdays,
+member_casual
+From dbo.cyclistic_2023
+GROUP BY 
+member_casual,
+DATEPART(WEEKDAY, started_at)
+ORDER BY DATEPART(WEEKDAY, started_at);
+
+-- Day
+-- Total number of riders by start time and user type during a day
+SELECT
+COUNT(ride_id) AS no_of_users,
+DATEPART(HOUR, started_at) as started_hour,
+member_casual
+From dbo.cyclistic_2023
+GROUP BY 
+member_casual,
+DATEPART(HOUR, started_at)
+ORDER BY DATEPART(HOUR, started_at);
+
+
+-- Mostly used stations
+-- Top 10 mostly used Start Stations by Member and Casual users --
+SELECT TOP 10
+COUNT(ride_id) AS no_of_riders,
+start_station_name,
+member_casual
+FROM dbo.cyclistic_2023
+GROUP BY 
+start_station_name,
+member_casual
+ORDER BY 
+COUNT(ride_id) DESC;
+
+-- Top 10 mostly used End Stations by Member and Casual users --
+SELECT TOP 10
+COUNT(ride_id) AS no_of_riders,
+end_station_name,
+member_casual
+FROM dbo.cyclistic_2023
+GROUP BY 
+end_station_name,
+member_casual
+ORDER BY 
+COUNT(ride_id) DESC;
+
+
+-- Additional time analysis by member and casual users --
+-- Average journey time by month 
+/*Here I calculate the average journey time by month from January 2023 
+to January 2024. Journey time is presented in minutes and seconds.*/
+SELECT  
+member_casual,
+ROUND(AVG(DATEDIFF(minute, 0, ride_length) + 
+   (DATEDIFF(second, 0, ride_length)
+   / 60.0)), 2) AS journey_time,
+YEAR(started_at) AS year,
+MONTH(started_at) AS month
+FROM dbo.cyclistic_2023 
+GROUP BY
+   member_casual,
+YEAR(started_at),
+MONTH(started_at)
+ORDER BY 
+YEAR(started_at),
+MONTH(started_at);
+
+-- Average Journey Time during a week
+-- The results shows average journey time difference between casual and member users during a week.
+SELECT
+  day_of_week,
+  ROUND(AVG(DATEDIFF(minute, 0, ride_length) + 
+  (DATEDIFF(second, 0, ride_length) / 60.0)), 2) AS avg_journey_time,
+  member_casual
+FROM dbo.cyclistic_2023 
+GROUP BY
+  day_of_week,
+  member_casual
+ORDER BY 
+  day_of_week
+
+-- Average Journey Time during a day
+-- The results shows average journey time difference between casual and member users during a day
+SELECT
+COUNT(ride_id) AS no_of_users,
+--DATEPART(MONTH, started_at) as Started_month,
+--DATEPART(WEEKDAY, started_at) as Started_day,
+DATEPART(HOUR, started_at) as started_hour,
+member_casual
+From dbo.cyclistic_2023
+GROUP BY 
+member_casual,
+DATEPART(HOUR, started_at)
+ORDER BY DATEPART(HOUR, started_at) ;
