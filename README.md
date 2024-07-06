@@ -13,7 +13,7 @@ This repository hosts an SQL script dedicated to the analysis of Cyclists, a Chi
   * Calculating the number of riders by month from January to December of 2023.
   * Calculating the average number of rides by weekday and user type.
   * Calculating the average number of rides by start time and user type during a day.
-* The **Visualization Phase** employs Tableau Public to graphically represent the data and uncover trends over time.
+* The **Visualization Phase** employs [Tableau Public Dashboard](https://public.tableau.com/views/Cyclistic2cleaneddata/CyclisticBike-Share?:language=en-GB&:sid=&:redirect=auth&:display_count=n&:origin=viz_share_link) to graphically represent the data and uncover trends over time.
 * Finally, in the **Share and Act Phase** presented the **Findings**, **Conclusions** and **Recommendations** to the the Marketing Director of Cyclistic bike share Company.
 
 ## Results and Insights
